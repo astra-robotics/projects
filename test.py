@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import imutils
 
-def green_detect(image):
+def blue_detect(image):
 
         #image[:,:,0]=0
         #image[:,:,2]=0
@@ -15,10 +15,10 @@ def green_detect(image):
         canvas=hsv[:,:,2]
         #cv2.imshow('hsvg',canvas)
         '''
-        lower_green = np.array([50,180,50])
-        upper_green = np.array([70,255,150])
-        
-        mask = cv2.inRange(hsv, lower_green, upper_green)
+        lower_blue = np.array([80,50,50])
+        upper_blue = np.array([255,100,100])
+
+        mask = cv2.inRange(hsv, lower_blue, upper_blue)
         
         res = cv2.bitwise_and(image,image, mask = mask)
         kernel = np.ones((5,5),'uint8')
@@ -35,8 +35,8 @@ def green_detect(image):
         #cv2.imshow('gauss',blur)
         cv2.imshow('image', image)
         #cv2.imshow('mask',mask)
-        #cv2.imshow('res',res)
-        #cv2.imshow('dilate',dilate)
+        cv2.imshow('res',res)
+        cv2.imshow('dilate',dilate)
         #cv2.imshow('canvas', canvas)
         #cv2.imshow('contours',image1)
         #peri = cv2.arcLength(contour, True)
@@ -52,8 +52,7 @@ cap = cv2.VideoCapture(0);
 while(True):
             ret, image = cap.read()
             if cv2.waitKey(1) != 27:
-                print(green_detect(image))
+                print(blue_detect(image))
             else:
                 exit()
-
 
