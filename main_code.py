@@ -18,7 +18,7 @@ class CDbot:
     def __init__(self):
         
         window = np.zeros((100,100)) #initialising a black 100x100 window for using escape to quit
-        self.colour = {'red':0,'green':0,'blue':0} #control dictionary for logic
+        self.colour = {'red':0,'green':0,'blue':0,-1:0} #control dictionary for logic
         left = (4,14)  #left wheel gpio pins
         right = (17,18) #right wheel gpio pins
         self.robot = Robot(left,right) #robot initialisation class call
@@ -34,9 +34,9 @@ class CDbot:
     
     #bot movement mechanics
     def botmove(self,image):
-        self.colour_verify(image) #colour verifying logic to avoid random colour detection defect
-        #self.colour = {'red':self.red_detect(image),'green':self.green_detect(image),'blue':self.blue_detect(image)}
-        #print(self.colour) 
+        self.colour = {'red':0, 'blue':0, 'green':0,-1:0}
+        self.colour[self.colour_detect(image)]=1
+        
         if self.colour['red'] == 1:
             #print('stop')
             self.robot.stop() #stops robot if red is verified
@@ -48,98 +48,62 @@ class CDbot:
             self.robot.reverse() #moves robot reverse if blue is verified
         else:
             pass #don't do anything
-    
-    #verification of colour
-    def colour_verify(self,image):
-        
-        #list initialisations for logic
-        red = [] 
-        green = []
-        blue = []
-        
-        #append three outputs from each detect function
-        for i in range(3):
-            red.append(self.red_detect(image))
-            green.append(self.green_detect(image))
-            blue.append(self.blue_detect(image))
-            
-        #reinitialising to zero to avoid the case of 2 or more being 1
-        self.colour = {'red':0,'green':0,'blue':0}
-        
-        #if 2 or more out of 3 in each of the lists is 1, verify that as the colour
-        if(ctr(red)[1]>=2):
-            self.colour['red'] = 1
-        else:
-            self.colour['red'] = 0
-            if(ctr(green)[1]>=2):
-                self.colour['green'] = 1
-            else:
-                self.colour['green'] = 0
-                if(ctr(blue)[1]>=2):
-                    self.colour['blue'] = 1
-                else:
-                    self.colour['blue'] = 0
-    
-    #function for detection of red (refer to test_red.py for explanation all 3 functions together)        
-    def red_detect(self,image):
 
-        hsv=cv2.cvtColor(image,cv2.COLOR_BGR2HSV)
-        
-        lower_red = np.array([120,150,150])
-        upper_red = np.array([200,255,255])
-
-        blur = cv2.GaussianBlur(hsv,(15,15),0)
-        mask = cv2.inRange(blur, lower_red, upper_red)
-        
-        res = cv2.bitwise_and(image,image, mask = mask)
-
-        image1,contours,hierarchy=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
-        if(len(contours) == 1):
-            return 1
-        else:
-            return 0
-        
-    #function for detection of green       
-    def green_detect(self,image):
+    #colour detection code
+    def colour_detect(image):
 
         hsv=cv2.cvtColor(image,cv2.COLOR_BGR2HSV)
 
-        lower_green = np.array([36,100,100])
-        upper_green = np.array([80,255,255])
-
-        blur = cv2.GaussianBlur(hsv,(15,15),0)
-        mask = cv2.inRange(blur, lower_green, upper_green)
-        
-        res = cv2.bitwise_and(image,image, mask = mask)
-
-        image1,contours,hierarchy=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-            
-        if(len(contours) == 1):
-            return 1
-        else:
-            return 0
-    
-    #function for detection of blue
-    def blue_detect(self,image):
-
-        hsv=cv2.cvtColor(image,cv2.COLOR_BGR2HSV)
-
-        lower_blue = np.array([100,150,0])
+        lower_blue = np.array([100,100,100])
         upper_blue = np.array([140,255,255])
 
-        blur = cv2.GaussianBlur(hsv,(15,15),0)
-        mask = cv2.inRange(blur, lower_blue, upper_blue)
-        
-        res = cv2.bitwise_and(image,image, mask = mask)
+        lower_red = np.array([140,100,100])
+        upper_red = np.array([180,255,255])
 
-        image1,contours,hierarchy=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-            
-        if(len(contours) == 1):
-            return 1
+        lower_green = np.array([60,100,100])
+        upper_green = np.array([100,255,255])
+
+        blue_mask = cv2.inRange(hsv, lower_blue, upper_blue)
+        red_mask = cv2.inRange(hsv, lower_red, upper_red)
+        green_mask = cv2.inRange(hsv, lower_green, upper_green)
+        
+        (w,h,c)=hsv.shape
+        image_area = w*h
+
+        blue_area = 0
+        red_area = 0
+        green_area = 0
+        res = cv2.bitwise_and(image,image, mask = green_mask)
+        cv2.imshow('res',res)
+
+        _,contours_blue,_ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        _,contours_red,_ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        _,contours_green,_ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for cnt_b in contours_blue:
+               blue_area = blue_area + cv2.contourArea(cnt_b)
+
+        for cnt_r  in contours_red:
+               red_area = red_area + cv2.contourArea(cnt_r)
+
+        for cnt_g in contours_green:       
+               green_area = green_area + cv2.contourArea(cnt_g)
+        
+        blue_ratio = blue_area/image_area
+        red_ratio = red_area/image_area
+        green_ratio = green_area/image_area
+
+        colour_ratios = [blue_ratio, red_ratio, green_ratio]
+        if(max(colour_ratios)>0.2):
+            if(max(colour_ratios) == colour_ratios[0]):
+                return 'blue'
+            elif(max(colour_ratios) == colour_ratios[1]):
+                return 'red'
+            else:
+                return 'green'
         else:
-            return 0
-    
+            return -1
+        
     #destructor of class
     def __del__(self):
         print('Program terminated')

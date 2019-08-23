@@ -25,7 +25,7 @@ def green_detect(image):
         kernel = np.ones((5,5),'uint8')
         dilate = cv2.dilate(mask, kernel)
         #ret,thresh=cv2.threshold(mask,0,255,0)
-        image1,contours,hierarchy=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        contours,hierarchy=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         cv2.drawContours(res,contours,-1,(255,255,255),5)
         #image1,contour,hierarchy=cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         
